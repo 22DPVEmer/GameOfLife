@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using GameOfLife.Constants;
 
 namespace GameOfLife
 {
@@ -11,17 +12,17 @@ namespace GameOfLife
     public class GameManager
     {
         private readonly GameEngine _gameEngine;
-        private readonly ConsoleRenderer _renderer;
+        private readonly IRenderer _renderer;
         private bool _isRunning;
-        private readonly int _updateIntervalMs = 1000;  // milliseconds
+        private readonly int _updateIntervalMs = DisplayConstants.GAME_UPDATE_INTERVAL_MS;
 
         /// <summary>
-        /// Creates a new game manager with specified grid dimensions.
+        /// Creates a new game manager with specified grid dimensions and renderer.
         /// </summary>
-        public GameManager(int rows, int columns)
+        public GameManager(int rows, int columns, IRenderer renderer)
         {
             _gameEngine = new GameEngine(rows, columns);
-            _renderer = new ConsoleRenderer();
+            _renderer = renderer;
         }
 
         /// <summary>
@@ -47,7 +48,7 @@ namespace GameOfLife
                             _isRunning = false;
                         }
                     }
-                    Thread.Sleep(100);  // reduce CPU usage
+                    Thread.Sleep(DisplayConstants.INPUT_CHECK_INTERVAL_MS);  // reduce CPU usage
                 }
             });
 
@@ -67,11 +68,11 @@ namespace GameOfLife
         /// Handles user input for grid dimensions and validates the input.
         /// </summary>
         /// <returns>A configured GameManager instance</returns>
-        public static async Task<GameManager> CreateGame()
+        public static async Task<GameManager> CreateGame(IRenderer renderer = null)
         {
-            var renderer = new ConsoleRenderer();
+            renderer ??= new ConsoleRenderer();
             var (rows, columns) = renderer.GetGridSize();
-            return new GameManager(rows, columns);
+            return new GameManager(rows, columns, renderer);
         }
     }
 } 

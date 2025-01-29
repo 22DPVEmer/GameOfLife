@@ -1,4 +1,5 @@
 using System;
+using GameOfLife.Constants;
 
 namespace GameOfLife.Models
 {
@@ -41,11 +42,11 @@ namespace GameOfLife.Models
         /// </summary>
         private void InitializeGrid()
         {
-            for (int i = 0; i < Rows; i++)
+            for (int rowIndex = 0; rowIndex < Rows; rowIndex++)
             {
-                for (int j = 0; j < Columns; j++)
+                for (int colIndex = 0; colIndex < Columns; colIndex++)
                 {
-                    _cells[i, j] = new Cell(i, j);
+                    _cells[rowIndex, colIndex] = new Cell(rowIndex, colIndex);
                 }
             }
         }
@@ -74,19 +75,19 @@ namespace GameOfLife.Models
         {
             int count = 0;
 
-            for (int i = -1; i <= 1; i++)
+            for (int rowOffset = -1; rowOffset <= 1; rowOffset++)
             {
-                for (int j = -1; j <= 1; j++)
+                for (int colOffset = -1; colOffset <= 1; colOffset++)
                 {
                     // Skip the cell itself
-                    if (i == 0 && j == 0) continue;
+                    if (rowOffset == 0 && colOffset == 0) continue;
 
-                    int newRow = row + i;
-                    int newCol = column + j;
+                    int neighborRow = row + rowOffset;
+                    int neighborCol = column + colOffset;
 
-                    if (newRow >= 0 && newRow < Rows && newCol >= 0 && newCol < Columns)
+                    if (neighborRow >= 0 && neighborRow < Rows && neighborCol >= 0 && neighborCol < Columns)
                     {
-                        if (_cells[newRow, newCol].IsAlive)
+                        if (_cells[neighborRow, neighborCol].IsAlive)
                             count++;
                     }
                 }
@@ -100,27 +101,28 @@ namespace GameOfLife.Models
         public Grid Clone()
         {
             Grid newGrid = new Grid(Rows, Columns);
-            for (int i = 0; i < Rows; i++)
+            for (int rowIndex = 0; rowIndex < Rows; rowIndex++)
             {
-                for (int j = 0; j < Columns; j++)
+                for (int colIndex = 0; colIndex < Columns; colIndex++)
                 {
-                    newGrid.SetCell(i, j, _cells[i, j].IsAlive);
+                    newGrid.SetCell(rowIndex, colIndex, _cells[rowIndex, colIndex].IsAlive);
                 }
             }
             return newGrid;
         }
 
         /// <summary>
+        /// Randomly sets cells to alive or dead.
         /// Used to create the initial state of the game with 20% of the cells alive.
         /// </summary>
-        public void RandomizeGrid(int seedPercentage = 20)
+        public void RandomizeGrid(int seedPercentage = DisplayConstants.INITIAL_ALIVE_CELLS_PERCENTAGE)
         {
             Random random = new Random();
-            for (int i = 0; i < Rows; i++)
+            for (int rowIndex = 0; rowIndex < Rows; rowIndex++)
             {
-                for (int j = 0; j < Columns; j++)
+                for (int colIndex = 0; colIndex < Columns; colIndex++)
                 {
-                    _cells[i, j].IsAlive = random.Next(100) < seedPercentage;
+                    _cells[rowIndex, colIndex].IsAlive = random.Next(100) < seedPercentage;
                 }
             }
         }

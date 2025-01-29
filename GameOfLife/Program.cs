@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using GameOfLife.Constants;
 
 namespace GameOfLife
 {
@@ -14,8 +15,8 @@ namespace GameOfLife
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-                Console.WriteLine("Press any key to exit...");
+                Console.WriteLine($"{DisplayConstants.ERROR_PREFIX}{ex.Message}");
+                Console.WriteLine(DisplayConstants.EXIT_PROMPT);
                 Console.ReadKey();
             }
         }

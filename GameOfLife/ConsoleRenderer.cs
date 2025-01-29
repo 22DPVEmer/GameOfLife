@@ -5,10 +5,21 @@ using GameOfLife.Constants;
 namespace GameOfLife
 {
     /// <summary>
+    /// Interface for game renderers, allowing different rendering implementations
+    /// </summary>
+    public interface IRenderer
+    {
+        void Render(Grid grid);
+        (int rows, int columns) GetGridSize();
+        void DisplayInvalidInputMessage();
+        void DisplayGameControls();
+    }
+
+    /// <summary>
     /// Handles all console-based user interface rendering.
     /// Responsible for displaying the game grid, menu, and messages to the user.
     /// </summary>
-    public class ConsoleRenderer
+    public class ConsoleRenderer : IRenderer
     {
         /// <summary>
         /// Initializes the console renderer and sets up console properties.
@@ -35,20 +46,20 @@ namespace GameOfLife
         {
             Console.Clear();
             // Add some space at the top
-            Console.WriteLine("\n");
+            Console.WriteLine(DisplayConstants.NEW_LINE);
             
-            for (int i = 0; i < grid.Rows; i++)
+            for (int rowIndex = 0; rowIndex < grid.Rows; rowIndex++)
             {
-                for (int j = 0; j < grid.Columns; j++)
+                for (int colIndex = 0; colIndex < grid.Columns; colIndex++)
                 {
-                    Console.Write(grid.GetCell(i, j).IsAlive ? DisplayConstants.ALIVE_CELL : DisplayConstants.DEAD_CELL);
-                    Console.Write(' '); // Add space for better visibility
+                    Console.Write(grid.GetCell(rowIndex, colIndex).IsAlive ? DisplayConstants.ALIVE_CELL : DisplayConstants.DEAD_CELL);
+                    Console.Write(DisplayConstants.CELL_SEPARATOR); // Add space for better visibility
                 }
                 Console.WriteLine();
             }
             
             // Add some space at the bottom and show quit instruction
-            Console.WriteLine("\n" + DisplayConstants.QUIT_INSTRUCTION);
+            Console.WriteLine(DisplayConstants.NEW_LINE + DisplayConstants.QUIT_INSTRUCTION);
         }
             
    
@@ -109,7 +120,7 @@ namespace GameOfLife
         /// </summary>
         public void DisplayGameControls()
         {
-            Console.WriteLine("\n" + DisplayConstants.AUTO_UPDATE_MESSAGE);
+            Console.WriteLine(DisplayConstants.NEW_LINE + DisplayConstants.AUTO_UPDATE_MESSAGE);
         }
     }
 } 
