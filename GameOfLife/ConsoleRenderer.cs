@@ -1,20 +1,10 @@
 using System;
 using GameOfLife.Models;
 using GameOfLife.Constants;
+using GameOfLife.Interfaces;
 
 namespace GameOfLife
 {
-    /// <summary>
-    /// Interface for game renderers, allowing different rendering implementations
-    /// </summary>
-    public interface IRenderer
-    {
-        void Render(Grid grid);
-        (int rows, int columns) GetGridSize();
-        void DisplayInvalidInputMessage();
-        void DisplayGameControls();
-    }
-
     /// <summary>
     /// Handles all console-based user interface rendering.
     /// Responsible for displaying the game grid, menu, and messages to the user.
@@ -61,10 +51,6 @@ namespace GameOfLife
             // Add some space at the bottom and show quit instruction
             Console.WriteLine(DisplayConstants.NEW_LINE + DisplayConstants.QUIT_INSTRUCTION);
         }
-            
-   
-            
-        
 
         /// <summary>
         /// Displays the menu and handles grid size input.
