@@ -47,8 +47,8 @@ namespace GameOfLife
                 Console.WriteLine();
             }
             
-            // Add some space at the bottom
-            Console.WriteLine("\n");
+            // Add some space at the bottom and show quit instruction
+            Console.WriteLine("\n" + DisplayConstants.QUIT_INSTRUCTION);
         }
             
    
@@ -67,15 +67,19 @@ namespace GameOfLife
             while (!validInput)
             {
                 Console.Clear();
-                Console.WriteLine("Welcome to Conway's Game of Life!");
-                Console.WriteLine("--------------------------------");
-                Console.WriteLine("Please enter the grid size:");
-                Console.Write("Rows (5-30): ");
+                Console.WriteLine(DisplayConstants.WELCOME_TEXT);
+                Console.WriteLine(DisplayConstants.SEPARATOR_LINE);
+                Console.WriteLine(DisplayConstants.GRID_SIZE_PROMPT);
+                Console.Write(DisplayConstants.ROWS_PROMPT);
 
-                if (int.TryParse(Console.ReadLine(), out rows) && rows >= 5 && rows <= 30)
+                if (int.TryParse(Console.ReadLine(), out rows) && 
+                    rows >= DisplayConstants.MIN_GRID_SIZE && 
+                    rows <= DisplayConstants.MAX_GRID_SIZE)
                 {
-                    Console.Write("Columns (5-30): ");
-                    if (int.TryParse(Console.ReadLine(), out columns) && columns >= 5 && columns <= 30)
+                    Console.Write(DisplayConstants.COLUMNS_PROMPT);
+                    if (int.TryParse(Console.ReadLine(), out columns) && 
+                        columns >= DisplayConstants.MIN_GRID_SIZE && 
+                        columns <= DisplayConstants.MAX_GRID_SIZE)
                     {
                         validInput = true;
                     }
@@ -95,8 +99,8 @@ namespace GameOfLife
         /// </summary>
         public void DisplayInvalidInputMessage()
         {
-            Console.WriteLine("Invalid input. Please enter a number between 5 and 30.");
-            Console.WriteLine("Press any key to try again...");
+            Console.WriteLine(DisplayConstants.INVALID_INPUT_MESSAGE);
+            Console.WriteLine(DisplayConstants.PRESS_ANY_KEY_MESSAGE);
             Console.ReadKey();
         }
 
@@ -105,8 +109,7 @@ namespace GameOfLife
         /// </summary>
         public void DisplayGameControls()
         {
-            Console.WriteLine("\nPress 'Q' to quit the game");
-            Console.WriteLine("Game will update automatically every second...");
+            Console.WriteLine("\n" + DisplayConstants.AUTO_UPDATE_MESSAGE);
         }
     }
 } 
