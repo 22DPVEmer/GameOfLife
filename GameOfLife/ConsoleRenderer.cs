@@ -1,5 +1,6 @@
 using System;
 using GameOfLife.Models;
+using GameOfLife.Constants;
 
 namespace GameOfLife
 {
@@ -9,13 +10,6 @@ namespace GameOfLife
     /// </summary>
     public class ConsoleRenderer
     {
-        /// <summary>
-        /// Characters used to represent live and dead cells in the console
-        /// ■ represents a live cell, □ represents a dead cell
-        /// </summary>
-        private const char ALIVE_CELL = '■';
-        private const char DEAD_CELL = '□';
-
         /// <summary>
         /// Initializes the console renderer and sets up console properties.
         /// </summary>
@@ -47,7 +41,7 @@ namespace GameOfLife
             {
                 for (int j = 0; j < grid.Columns; j++)
                 {
-                    Console.Write(grid.GetCell(i, j).IsAlive ? ALIVE_CELL : DEAD_CELL);
+                    Console.Write(grid.GetCell(i, j).IsAlive ? DisplayConstants.ALIVE_CELL : DisplayConstants.DEAD_CELL);
                     Console.Write(' '); // Add space for better visibility
                 }
                 Console.WriteLine();
