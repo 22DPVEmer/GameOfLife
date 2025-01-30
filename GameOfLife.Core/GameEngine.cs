@@ -1,6 +1,6 @@
-using GameOfLife.Models;
+using GameOfLife.Core.Models;
 
-namespace GameOfLife
+namespace GameOfLife.Core
 {
     /// <summary>
     /// Core game engine that implements Conway's Game of Life rules.
@@ -35,6 +35,14 @@ namespace GameOfLife
         public Grid GetCurrentGrid()
         {
             return _currentGrid;
+        }
+
+        /// <summary>
+        /// Sets the current grid to the provided grid
+        /// </summary>
+        public void SetCurrentGrid(Grid grid)
+        {
+            _currentGrid = grid;
         }
 
         /// <summary>

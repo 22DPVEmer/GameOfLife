@@ -9,6 +9,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+/saves/
 
 # Build results
 [Dd]ebug/

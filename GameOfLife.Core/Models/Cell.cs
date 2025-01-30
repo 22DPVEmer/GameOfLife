@@ -1,4 +1,4 @@
-namespace GameOfLife.Models
+namespace GameOfLife.Core.Models
 {
     /// <summary>
     /// Represents a single cell in Conway's Game of Life.
