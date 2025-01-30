@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using GameOfLife.Core;
 using GameOfLife.Core.Constants;
-using GameOfLife.Console.Interfaces;
+using GameOfLife.Core.Interfaces;
 using GameOfLife.Core.Models;
 using GameOfLife.Core.Services;
 

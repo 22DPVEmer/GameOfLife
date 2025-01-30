@@ -1,7 +1,7 @@
 using System;
 using GameOfLife.Core.Models;
 using GameOfLife.Core.Constants;
-using GameOfLife.Console.Interfaces;
+using GameOfLife.Core.Interfaces;
 
 namespace GameOfLife.Console
 {
@@ -37,11 +37,11 @@ namespace GameOfLife.Console
             System.Console.Clear();
             
             // Render grid
-            for (int row = 0; row < grid.Rows; row++)
+            for (int rowIndex = 0; rowIndex < grid.Rows; rowIndex++)
             {
-                for (int col = 0; col < grid.Columns; col++)
+                for (int colIndex = 0; colIndex < grid.Columns; colIndex++)
                 {
-                    var cell = grid.GetCell(row, col);
+                    var cell = grid.GetCell(rowIndex, colIndex);
                     System.Console.Write($"{(cell.IsAlive ? DisplayConstants.ALIVE_CELL : DisplayConstants.DEAD_CELL)}");
                     System.Console.Write(DisplayConstants.CELL_SEPARATOR);
                 }

@@ -1,6 +1,6 @@
 using GameOfLife.Core.Models;
 
-namespace GameOfLife.Console.Interfaces
+namespace GameOfLife.Core.Interfaces
 {
     /// <summary>
     /// Interface for game renderers, allowing different rendering implementations
