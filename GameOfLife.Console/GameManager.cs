@@ -230,13 +230,13 @@ namespace GameOfLife.Console
                 var choice = System.Console.ReadKey(true).KeyChar;
                 GameManager manager = null;
 
-                switch (choice)
+                switch ((MenuOption)choice)
                 {
-                    case '1':
+                    case MenuOption.NewGame:
                         var (rows, columns) = renderer.GetGridSize();
                         manager = new GameManager(rows, columns, renderer, gameStateService);
                         break;
-                    case '2':
+                    case MenuOption.LoadGame:
                         if (gameStateService.SaveFileExists())
                         {
                             var saves = gameStateService.GetSaveFiles();
@@ -267,7 +267,7 @@ namespace GameOfLife.Console
                             System.Console.ReadKey(true);
                         }
                         break;
-                    case '3':
+                    case MenuOption.Exit:
                         Environment.Exit(0);
                         break;
                 }

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Collections.Generic;
 using System.Linq;
 using GameOfLife.Core.Models;
+using GameOfLife.Core.Constants;
 
 namespace GameOfLife.Core.Services
 {
@@ -13,7 +14,6 @@ namespace GameOfLife.Core.Services
     public class GameStateService
     {
         private readonly string _savePath;
-        private const string SaveFileExtension = ".json";
         private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -22,7 +22,7 @@ namespace GameOfLife.Core.Services
 
         public GameStateService()
         {
-            _savePath = Path.Combine(Directory.GetCurrentDirectory(), "saves");
+            _savePath = FileConstants.DEFAULT_SAVE_PATH;
             Directory.CreateDirectory(_savePath);
         }
 
@@ -40,9 +40,13 @@ namespace GameOfLife.Core.Services
             if (state == null)
                 throw new ArgumentNullException(nameof(state));
 
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            var fileName = $"game_save_{timestamp}{SaveFileExtension}";
-            var filePath = Path.Combine(_savePath, fileName);
+            if (!Directory.Exists(_savePath))
+            {
+                Directory.CreateDirectory(_savePath);
+            }
+
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var filePath = Path.Combine(_savePath, $"save_{timestamp}{FileConstants.SAVE_FILE_EXTENSION}");
             var json = JsonSerializer.Serialize(state, _jsonOptions);
             File.WriteAllText(filePath, json);
         }
@@ -52,9 +56,14 @@ namespace GameOfLife.Core.Services
         /// </summary>
         public List<string> GetSaveFiles()
         {
-            return Directory.GetFiles(_savePath, $"*{SaveFileExtension}")
-                          .Select(Path.GetFileName)
-                          .ToList();
+            if (!Directory.Exists(_savePath))
+            {
+                return new List<string>();
+            }
+
+            return Directory.GetFiles(_savePath, $"*{FileConstants.SAVE_FILE_EXTENSION}")
+                .Select(Path.GetFileName)
+                .ToList();
         }
 
         /// <summary>
@@ -94,7 +103,8 @@ namespace GameOfLife.Core.Services
 
         public bool SaveFileExists()
         {
-            return GetSaveFiles().Any();
+            return Directory.Exists(_savePath) && 
+                   Directory.GetFiles(_savePath, $"*{FileConstants.SAVE_FILE_EXTENSION}").Any();
         }
     }
 } 
