@@ -3,10 +3,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
 using GameOfLife.Core;
-using GameOfLife.Core.Constants;
-using GameOfLife.Core.Interfaces;
 using GameOfLife.Core.Models;
+using GameOfLife.Core.Interfaces;
 using GameOfLife.Core.Services;
+using GameOfLife.Core.Constants;
 
 namespace GameOfLife.Console
 {
@@ -282,6 +282,16 @@ namespace GameOfLife.Console
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Loads a game state into the current game manager.
+        /// </summary>
+        public void LoadState(GameState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            _currentIteration = state.Iteration;
+            _gameEngine.SetCurrentGrid(state.ToGrid());
         }
     }
 } 

@@ -2,6 +2,8 @@ using System;
 using GameOfLife.Core.Models;
 using GameOfLife.Core.Constants;
 using GameOfLife.Core.Interfaces;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GameOfLife.Console
 {
@@ -34,24 +36,50 @@ namespace GameOfLife.Console
         /// </summary>
         public void Render(Grid grid, int iteration, int livingCells)
         {
+            Render(new[] { grid }, iteration, livingCells, 1);
+        }
+
+        /// <summary>
+        /// Renders the current state of the game grid to the console.
+        /// Uses special characters for better visualization, with a fallback to ASCII characters.
+        /// </summary>
+        public void Render(IEnumerable<Grid> visibleGrids, int iteration, int totalLivingCells, int activeGames)
+        {
             System.Console.Clear();
             
-            // Render grid
-            for (int rowIndex = 0; rowIndex < grid.Rows; rowIndex++)
+            var grids = visibleGrids.ToList();
+            if (!grids.Any()) return;
+
+            var firstGrid = grids.First();
+            int maxGridsPerRow = Math.Min(4, grids.Count);
+            int gridRows = (grids.Count + maxGridsPerRow - 1) / maxGridsPerRow;
+
+            for (int gridRow = 0; gridRow < gridRows; gridRow++)
             {
-                for (int colIndex = 0; colIndex < grid.Columns; colIndex++)
+                // Print each row of cells for all grids in this row
+                for (int row = 0; row < firstGrid.Rows; row++)
                 {
-                    var cell = grid.GetCell(rowIndex, colIndex);
-                    System.Console.Write($"{(cell.IsAlive ? DisplayConstants.ALIVE_CELL : DisplayConstants.DEAD_CELL)}");
-                    System.Console.Write(DisplayConstants.CELL_SEPARATOR);
+                    for (int g = gridRow * maxGridsPerRow; g < Math.Min((gridRow + 1) * maxGridsPerRow, grids.Count); g++)
+                    {
+                        var grid = grids[g];
+                        for (int col = 0; col < grid.Columns; col++)
+                        {
+                            var cell = grid.GetCell(row, col);
+                            System.Console.Write(cell.IsAlive ? DisplayConstants.ALIVE_CELL : DisplayConstants.DEAD_CELL);
+                            System.Console.Write(DisplayConstants.CELL_SEPARATOR);
+                        }
+                        System.Console.Write(new string(' ', 4)); // Space between grids
+                    }
+                    System.Console.WriteLine();
                 }
-                System.Console.WriteLine();
+                System.Console.WriteLine(); // Space between grid rows
             }
             
-            // Display status at the bottom of the grid
-            var statusLine = string.Format(DisplayConstants.GAME_CONTROLS, iteration, livingCells);
+            // Update status display
+            var statusLine = string.Format(DisplayConstants.GAME_CONTROLS, iteration, totalLivingCells, activeGames);
             System.Console.WriteLine();
             System.Console.WriteLine(statusLine);
+            System.Console.WriteLine(DisplayConstants.SWITCH_GAMES_PROMPT);
         }
 
         /// <summary>

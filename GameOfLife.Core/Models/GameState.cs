@@ -15,17 +15,18 @@ namespace GameOfLife.Core.Models
         public int Columns { get; set; }
         public int Iteration { get; set; }
 
-        // Store cell states as a list of lists for better serialization support
         [JsonPropertyName("cells")]
         public List<List<bool>> CellStates { get; set; }
 
-        public GameState() 
+        public GameState()
         {
             CellStates = new List<List<bool>>();
         }
 
         public GameState(Grid grid, int iteration)
         {
+            if (grid == null) throw new ArgumentNullException(nameof(grid));
+            
             Rows = grid.Rows;
             Columns = grid.Columns;
             Iteration = iteration;
@@ -51,7 +52,7 @@ namespace GameOfLife.Core.Models
                 {
                     if (CellStates[row][col])
                     {
-                        grid.GetCell(row, col).IsAlive = true;
+                        grid.SetCell(row, col, true);
                     }
                 }
             }
