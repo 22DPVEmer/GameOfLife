@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
+using System.Linq;
 using GameOfLife.Core.Models;
+using GameOfLife.Core.Constants;
 
 namespace GameOfLife.Core.Services
 {
@@ -11,16 +13,23 @@ namespace GameOfLife.Core.Services
     /// </summary>
     public class GameStateService
     {
-        private readonly string _saveDirectory;
+        private readonly string _savePath;
+        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNameCaseInsensitive = true
+        };
 
         public GameStateService()
         {
-            _saveDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "GameOfLife",
-                "Saves"
-            );
-            Directory.CreateDirectory(_saveDirectory);
+            _savePath = FileConstants.DEFAULT_SAVE_PATH;
+            Directory.CreateDirectory(_savePath);
+        }
+
+        public GameStateService(string customSavePath)
+        {
+            _savePath = customSavePath;
+            Directory.CreateDirectory(_savePath);
         }
 
         /// <summary>
@@ -28,10 +37,17 @@ namespace GameOfLife.Core.Services
         /// </summary>
         public void SaveGame(GameState state)
         {
-            var fileName = $"game_save_{DateTime.Now:yyyyMMdd_HHmmss}.json";
-            var filePath = Path.Combine(_saveDirectory, fileName);
-            
-            var json = JsonSerializer.Serialize(state);
+            if (state == null)
+                throw new ArgumentNullException(nameof(state));
+
+            if (!Directory.Exists(_savePath))
+            {
+                Directory.CreateDirectory(_savePath);
+            }
+
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var filePath = Path.Combine(_savePath, $"save_{timestamp}{FileConstants.SAVE_FILE_EXTENSION}");
+            var json = JsonSerializer.Serialize(state, _jsonOptions);
             File.WriteAllText(filePath, json);
         }
 
@@ -40,7 +56,14 @@ namespace GameOfLife.Core.Services
         /// </summary>
         public List<string> GetSaveFiles()
         {
-            return new List<string>(Directory.GetFiles(_saveDirectory, "game_save_*.json"));
+            if (!Directory.Exists(_savePath))
+            {
+                return new List<string>();
+            }
+
+            return Directory.GetFiles(_savePath, $"*{FileConstants.SAVE_FILE_EXTENSION}")
+                .Select(Path.GetFileName)
+                .ToList();
         }
 
         /// <summary>
@@ -48,14 +71,14 @@ namespace GameOfLife.Core.Services
         /// </summary>
         public GameState LoadGame(string fileName)
         {
-            var filePath = Path.Combine(_saveDirectory, fileName);
+            var filePath = Path.Combine(_savePath, fileName);
             if (!File.Exists(filePath))
             {
                 throw new FileNotFoundException($"Save file not found: {fileName}");
             }
 
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<GameState>(json);
+            return JsonSerializer.Deserialize<GameState>(json, _jsonOptions);
         }
 
         /// <summary>
@@ -73,7 +96,8 @@ namespace GameOfLife.Core.Services
 
         public bool SaveFileExists()
         {
-            return Directory.GetFiles(_saveDirectory, "game_save_*.json").Length > 0;
+            return Directory.Exists(_savePath) && 
+                   Directory.GetFiles(_savePath, $"*{FileConstants.SAVE_FILE_EXTENSION}").Any();
         }
     }
 } 
