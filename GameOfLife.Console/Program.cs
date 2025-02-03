@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
-using GameOfLife.Constants;
+using GameOfLife.Core.Constants;
 
-namespace GameOfLife
+namespace GameOfLife.Console
 {
     class Program
     {
@@ -15,9 +15,9 @@ namespace GameOfLife
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{DisplayConstants.ERROR_PREFIX}{ex.Message}");
-                Console.WriteLine(DisplayConstants.EXIT_PROMPT);
-                Console.ReadKey();
+                System.Console.WriteLine($"{DisplayConstants.ERROR_PREFIX}{ex.Message}");
+                System.Console.WriteLine(DisplayConstants.EXIT_PROMPT);
+                System.Console.ReadKey();
             }
         }
     }

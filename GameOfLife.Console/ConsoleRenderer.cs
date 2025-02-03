@@ -1,9 +1,9 @@
 using System;
-using GameOfLife.Models;
-using GameOfLife.Constants;
-using GameOfLife.Interfaces;
+using GameOfLife.Core.Models;
+using GameOfLife.Core.Constants;
+using GameOfLife.Core.Interfaces;
 
-namespace GameOfLife
+namespace GameOfLife.Console
 {
     /// <summary>
     /// Handles all console-based user interface rendering.
@@ -19,8 +19,8 @@ namespace GameOfLife
             try
             {
                 // Set UTF-8 encoding to properly display special characters
-                Console.OutputEncoding = System.Text.Encoding.UTF8;
-                Console.CursorVisible = false; // Hide cursor for cleaner display
+                System.Console.OutputEncoding = System.Text.Encoding.UTF8;
+                System.Console.CursorVisible = false; // Hide cursor for cleaner display
             }
             catch
             {
@@ -32,24 +32,26 @@ namespace GameOfLife
         /// Renders the current state of the game grid to the console.
         /// Uses special characters for better visualization, with a fallback to ASCII characters.
         /// </summary>
-        public void Render(Grid grid)
+        public void Render(Grid grid, int iteration, int livingCells)
         {
-            Console.Clear();
-            // Add some space at the top
-            Console.WriteLine(DisplayConstants.NEW_LINE);
+            System.Console.Clear();
             
+            // Render grid
             for (int rowIndex = 0; rowIndex < grid.Rows; rowIndex++)
             {
                 for (int colIndex = 0; colIndex < grid.Columns; colIndex++)
                 {
-                    Console.Write(grid.GetCell(rowIndex, colIndex).IsAlive ? DisplayConstants.ALIVE_CELL : DisplayConstants.DEAD_CELL);
-                    Console.Write(DisplayConstants.CELL_SEPARATOR); // Add space for better visibility
+                    var cell = grid.GetCell(rowIndex, colIndex);
+                    System.Console.Write($"{(cell.IsAlive ? DisplayConstants.ALIVE_CELL : DisplayConstants.DEAD_CELL)}");
+                    System.Console.Write(DisplayConstants.CELL_SEPARATOR);
                 }
-                Console.WriteLine();
+                System.Console.WriteLine();
             }
             
-            // Add some space at the bottom and show quit instruction
-            Console.WriteLine(DisplayConstants.NEW_LINE + DisplayConstants.QUIT_INSTRUCTION);
+            // Display status at the bottom of the grid
+            var statusLine = string.Format(DisplayConstants.GAME_CONTROLS, iteration, livingCells);
+            System.Console.WriteLine();
+            System.Console.WriteLine(statusLine);
         }
 
         /// <summary>
@@ -63,18 +65,18 @@ namespace GameOfLife
 
             while (!validInput)
             {
-                Console.Clear();
-                Console.WriteLine(DisplayConstants.WELCOME_TEXT);
-                Console.WriteLine(DisplayConstants.SEPARATOR_LINE);
-                Console.WriteLine(DisplayConstants.GRID_SIZE_PROMPT);
-                Console.Write(DisplayConstants.ROWS_PROMPT);
+                System.Console.Clear();
+                System.Console.WriteLine(DisplayConstants.WELCOME_TEXT);
+                System.Console.WriteLine(DisplayConstants.SEPARATOR_LINE);
+                System.Console.WriteLine(DisplayConstants.GRID_SIZE_PROMPT);
+                System.Console.Write(DisplayConstants.ROWS_PROMPT);
 
-                if (int.TryParse(Console.ReadLine(), out rows) && 
+                if (int.TryParse(System.Console.ReadLine(), out rows) && 
                     rows >= DisplayConstants.MIN_GRID_SIZE && 
                     rows <= DisplayConstants.MAX_GRID_SIZE)
                 {
-                    Console.Write(DisplayConstants.COLUMNS_PROMPT);
-                    if (int.TryParse(Console.ReadLine(), out columns) && 
+                    System.Console.Write(DisplayConstants.COLUMNS_PROMPT);
+                    if (int.TryParse(System.Console.ReadLine(), out columns) && 
                         columns >= DisplayConstants.MIN_GRID_SIZE && 
                         columns <= DisplayConstants.MAX_GRID_SIZE)
                     {
@@ -96,9 +98,9 @@ namespace GameOfLife
         /// </summary>
         public void DisplayInvalidInputMessage()
         {
-            Console.WriteLine(DisplayConstants.INVALID_INPUT_MESSAGE);
-            Console.WriteLine(DisplayConstants.PRESS_ANY_KEY_MESSAGE);
-            Console.ReadKey();
+            System.Console.WriteLine(DisplayConstants.INVALID_INPUT_MESSAGE);
+            System.Console.WriteLine(DisplayConstants.PRESS_ANY_KEY_MESSAGE);
+            System.Console.ReadKey();
         }
 
         /// <summary>
@@ -106,7 +108,7 @@ namespace GameOfLife
         /// </summary>
         public void DisplayGameControls()
         {
-            Console.WriteLine(DisplayConstants.NEW_LINE + DisplayConstants.AUTO_UPDATE_MESSAGE);
+            System.Console.WriteLine(DisplayConstants.AUTO_UPDATE_MESSAGE);
         }
     }
 } 

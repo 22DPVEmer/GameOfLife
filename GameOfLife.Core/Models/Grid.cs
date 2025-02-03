@@ -1,7 +1,6 @@
 using System;
-using GameOfLife.Constants;
 
-namespace GameOfLife.Models
+namespace GameOfLife.Core.Models
 {
     /// <summary>
     /// Represents the game grid that contains all cells.
@@ -113,9 +112,9 @@ namespace GameOfLife.Models
 
         /// <summary>
         /// Randomly sets cells to alive or dead.
-        /// Used to create the initial state of the game with 20% of the cells alive.
+        /// Used to create the initial state of the game.
         /// </summary>
-        public void RandomizeGrid(int seedPercentage = DisplayConstants.INITIAL_ALIVE_CELLS_PERCENTAGE)
+        public void RandomizeGrid(int seedPercentage = 20)
         {
             Random random = new Random();
             for (int rowIndex = 0; rowIndex < Rows; rowIndex++)

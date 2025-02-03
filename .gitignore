@@ -10,6 +10,12 @@
 *.userosscache
 *.sln.docstates
 
+# Game save files and folders
+**/saves/
+**/saves/**
+GameOfLife.Console/saves/
+GameOfLife.Console/saves/**
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
