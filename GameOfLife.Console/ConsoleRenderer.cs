@@ -79,7 +79,6 @@ namespace GameOfLife.Console
             var statusLine = string.Format(DisplayConstants.GAME_CONTROLS, iteration, totalLivingCells, activeGames);
             System.Console.WriteLine();
             System.Console.WriteLine(statusLine);
-            System.Console.WriteLine(DisplayConstants.SWITCH_GAMES_PROMPT);
         }
 
         /// <summary>
@@ -129,14 +128,6 @@ namespace GameOfLife.Console
             System.Console.WriteLine(DisplayConstants.INVALID_INPUT_MESSAGE);
             System.Console.WriteLine(DisplayConstants.PRESS_ANY_KEY_MESSAGE);
             System.Console.ReadKey();
-        }
-
-        /// <summary>
-        /// Displays the game controls and instructions.
-        /// </summary>
-        public void DisplayGameControls()
-        {
-            System.Console.WriteLine(DisplayConstants.AUTO_UPDATE_MESSAGE);
         }
     }
 } 

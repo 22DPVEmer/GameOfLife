@@ -18,31 +18,31 @@ namespace GameOfLife.Console
                 System.Console.Clear();
                 System.Console.WriteLine(DisplayConstants.WELCOME_TEXT);
                 System.Console.WriteLine(DisplayConstants.SEPARATOR_LINE);
-                System.Console.WriteLine("1. Start Single Game");
-                System.Console.WriteLine("2. Load Single Game");
-                System.Console.WriteLine("3. Start 1000 Parallel Games");
-                System.Console.WriteLine("4. Load Parallel Games");
-                System.Console.WriteLine("5. Exit");
-                System.Console.Write("\nSelect an option (1-5): ");
+                System.Console.WriteLine(DisplayConstants.MENU_OPTION_1);
+                System.Console.WriteLine(DisplayConstants.MENU_OPTION_2);
+                System.Console.WriteLine(DisplayConstants.MENU_OPTION_3);
+                System.Console.WriteLine(DisplayConstants.MENU_OPTION_4);
+                System.Console.WriteLine(DisplayConstants.MENU_OPTION_5);
+                System.Console.Write(DisplayConstants.MENU_PROMPT);
 
                 var choice = System.Console.ReadKey(true).KeyChar;
 
                 switch (choice)
                 {
-                    case '1':
+                    case DisplayConstants.NEW_GAME:
                         var (rows, columns) = renderer.GetGridSize();
                         var singleGame = new GameManager(rows, columns, renderer);
                         await singleGame.StartGame();
                         break;
 
-                    case '2':
-                        if (gameStateService.SaveFileExists())
+                    case DisplayConstants.LOAD_GAME:
+                        if (gameStateService.SaveFileExists(parallelGames: false))
                         {
-                            var saves = gameStateService.GetSaveFiles();
-                            System.Console.WriteLine("\n" + DisplayConstants.AVAILABLE_SAVES_HEADER);
+                            var saves = gameStateService.GetSaveFiles(parallelGames: false);
+                            System.Console.WriteLine(DisplayConstants.AVAILABLE_SAVES_HEADER);
                             for (int i = 0; i < saves.Count; i++)
                             {
-                                System.Console.WriteLine($"{i + 1}. {saves[i]}");
+                                System.Console.WriteLine(DisplayConstants.SAVE_FORMAT, i + 1, saves[i]);
                             }
                             System.Console.WriteLine(DisplayConstants.SAVE_SELECTION_PROMPT);
 
@@ -57,49 +57,49 @@ namespace GameOfLife.Console
                         }
                         else
                         {
-                            System.Console.WriteLine("\nNo save files found. Press any key to continue...");
+                            System.Console.WriteLine(DisplayConstants.NO_SINGLE_SAVES);
                             System.Console.ReadKey(true);
                         }
                         break;
 
-                    case '3':
+                    case DisplayConstants.NEW_PARALLEL_GAME:
                         var (parallelRows, parallelColumns) = renderer.GetGridSize();
                         var newParallelGames = new ParallelGameManager(1000, parallelRows, parallelColumns, renderer);
-                        await newParallelGames.StartGames();
+                        await newParallelGames.StartGame();
                         break;
 
-                    case '4':
-                        if (gameStateService.SaveFileExists())
+                    case DisplayConstants.LOAD_PARALLEL_GAME:
+                        if (gameStateService.SaveFileExists(parallelGames: true))
                         {
-                            var saves = gameStateService.GetSaveFiles();
-                            System.Console.WriteLine("\n" + DisplayConstants.AVAILABLE_SAVES_HEADER);
+                            var saves = gameStateService.GetSaveFiles(parallelGames: true);
+                            System.Console.WriteLine(DisplayConstants.AVAILABLE_SAVES_HEADER);
                             for (int i = 0; i < saves.Count; i++)
                             {
-                                System.Console.WriteLine($"{i + 1}. {saves[i]}");
+                                System.Console.WriteLine(DisplayConstants.SAVE_FORMAT, i + 1, saves[i]);
                             }
                             System.Console.WriteLine(DisplayConstants.SAVE_SELECTION_PROMPT);
 
                             if (int.TryParse(System.Console.ReadLine(), out int saveChoice) && 
                                 saveChoice > 0 && saveChoice <= saves.Count)
                             {
-                                var state = gameStateService.LoadGame(saves[saveChoice - 1]);
-                                var loadedParallelGames = new ParallelGameManager(1000, state.Rows, state.Columns, renderer, state);
-                                await loadedParallelGames.StartGames();
+                                var parallelState = gameStateService.LoadParallelGame(saves[saveChoice - 1]);
+                                var loadedParallelGames = new ParallelGameManager(parallelState, renderer);
+                                await loadedParallelGames.StartGame();
                             }
                         }
                         else
                         {
-                            System.Console.WriteLine("\nNo save files found. Press any key to continue...");
+                            System.Console.WriteLine(DisplayConstants.NO_PARALLEL_SAVES);
                             System.Console.ReadKey(true);
                         }
                         break;
 
-                    case '5':
+                    case DisplayConstants.EXIT:
                         exitProgram = true;
                         break;
 
                     default:
-                        System.Console.WriteLine("\nInvalid option. Press any key to continue...");
+                        System.Console.WriteLine(DisplayConstants.INVALID_OPTION);
                         System.Console.ReadKey(true);
                         break;
                 }

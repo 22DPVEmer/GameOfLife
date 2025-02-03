@@ -6,6 +6,8 @@ namespace GameOfLife.Core.Constants
     {
         public const string SAVE_FILE_EXTENSION = ".json";
         private const string SAVE_DIRECTORY_NAME = "saves";
+        public const string SINGLE_GAME_PREFIX = "single_";
+        public const string PARALLEL_GAME_PREFIX = "parallel_";
         
         /// <summary>
         /// Gets the default path for saving game states, which combines the current directory

@@ -14,13 +14,9 @@ namespace GameOfLife.Console
     /// Orchestrates the game flow and manages interaction between components.
     /// Acts as the main controller for the Game of Life application.
     /// </summary>
-    public class GameManager
+    public class GameManager : BaseGameManager
     {
         private readonly GameEngine _gameEngine;
-        private readonly IRenderer _renderer;
-        private readonly GameStateService _gameStateService;
-        private bool _isRunning;
-        private readonly int _updateIntervalMs = DisplayConstants.GAME_UPDATE_INTERVAL_MS;
         private int _currentIteration;
         private TaskCompletionSource<bool> _quitTaskSource;
 
@@ -28,18 +24,20 @@ namespace GameOfLife.Console
         /// Creates a new game manager with specified grid dimensions and renderer.
         /// </summary>
         public GameManager(int rows, int columns, IRenderer renderer)
-            : this(rows, columns, renderer, new GameStateService())
+            : base(renderer)
         {
+            _gameEngine = new GameEngine(rows, columns) ?? throw new ArgumentNullException(nameof(_gameEngine));
+            _currentIteration = 1;
+            _quitTaskSource = new TaskCompletionSource<bool>();
         }
 
         /// <summary>
         /// Creates a new game manager with specified dependencies (for testing).
         /// </summary>
         public GameManager(int rows, int columns, IRenderer renderer, GameStateService gameStateService)
+            : base(renderer, gameStateService)
         {
-            _gameEngine = new GameEngine(rows, columns);
-            _renderer = renderer;
-            _gameStateService = gameStateService;
+            _gameEngine = new GameEngine(rows, columns) ?? throw new ArgumentNullException(nameof(_gameEngine));
             _currentIteration = 1;
             _quitTaskSource = new TaskCompletionSource<bool>();
         }
@@ -58,61 +56,51 @@ namespace GameOfLife.Console
         public async Task SaveAndQuit()
         {
             SaveGame();
-            _isRunning = false;
             await _quitTaskSource.Task;
         }
 
         /// <summary>
         /// Main game loop that updates the grid every second and handles user input
         /// </summary>
-        public async Task StartGame()
+        public override async Task StartGame()
         {
-            _isRunning = true;
             if (_currentIteration == 1) // Only randomize if it's a new game
             {
                 _gameEngine.RandomizeInitialState();
             }
             
-            _renderer.DisplayGameControls();
+            System.Console.WriteLine(DisplayConstants.SINGLE_GAME_CONTROLS);
 
             // Start a background task to handle user input
-            var quitTask = Task.Run(() =>
+            var quitTask = Task.Run(async () =>
             {
-                while (_isRunning)
+                while (true)
                 {
                     // Check for key presses
                     if (System.Console.KeyAvailable)
                     {
                         var key = System.Console.ReadKey(true);
-                        switch (key.Key)
+                        if (key.Key == ConsoleKey.S)
                         {
-                            case ConsoleKey.Q:
-                                _isRunning = false;
-                                System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.QuitMessage);
-                                break;
-                            case ConsoleKey.S:
-                                SaveGame();
-                                break;
-                            case ConsoleKey.L:
-                                LoadGameMenu();
-                                break;
-                            case ConsoleKey.M:
-                                _isRunning = false;
-                                System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.ReturnToMenuMessage);
-                                break;
+                            SaveGame();
+                        }
+                        else
+                        {
+                            await HandleBasicInput(key);
                         }
                     }
-                    Thread.Sleep(DisplayConstants.INPUT_CHECK_INTERVAL_MS);  // reduce CPU usage
+                    await Task.Delay(DisplayConstants.INPUT_CHECK_INTERVAL_MS);  // reduce CPU usage
                 }
                 _quitTaskSource.SetResult(true);
             });
 
             // Main game loop - updates and renders the game state
-            while (_isRunning)
+            while (true)
             {
                 var currentGrid = _gameEngine.GetCurrentGrid();
                 var livingCells = CountLivingCells(currentGrid);
                 _renderer.Render(currentGrid, _currentIteration, livingCells);
+                System.Console.WriteLine(DisplayConstants.SINGLE_GAME_CONTROLS);
                 await Task.Delay(_updateIntervalMs);
                 _gameEngine.NextGeneration();
                 _currentIteration++;
@@ -130,11 +118,11 @@ namespace GameOfLife.Console
             {
                 var state = new GameState(_gameEngine.GetCurrentGrid(), _currentIteration);
                 _gameStateService.SaveGame(state);
-                System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.GameSavedMessage);
+                System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.GAME_SAVED_MESSAGE);
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.ERROR_PREFIX + ex.Message);
+                DisplayError(ex);
             }
         }
 
@@ -146,7 +134,7 @@ namespace GameOfLife.Console
             var saves = _gameStateService.GetSaveFiles();
             if (!saves.Any())
             {
-                System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.NoSaveFileMessage);
+                System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.NO_SINGLE_SAVES);
                 return;
             }
 
@@ -177,7 +165,7 @@ namespace GameOfLife.Console
                 {
                     _currentIteration = state.Iteration;
                     _gameEngine.SetCurrentGrid(state.ToGrid());
-                    System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.GameLoadedMessage);
+                    System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.GAME_LOADED_MESSAGE);
                 }
             }
             catch (Exception ex)
@@ -222,10 +210,10 @@ namespace GameOfLife.Console
                 System.Console.Clear();
                 System.Console.WriteLine(DisplayConstants.WELCOME_TEXT);
                 System.Console.WriteLine(DisplayConstants.SEPARATOR_LINE);
-                System.Console.WriteLine(DisplayConstants.MENU_OPTION_NEW_GAME);
-                System.Console.WriteLine(DisplayConstants.MENU_OPTION_LOAD_GAME);
-                System.Console.WriteLine(DisplayConstants.MENU_OPTION_EXIT);
-                System.Console.WriteLine(DisplayConstants.MENU_SELECT_PROMPT);
+                System.Console.WriteLine(DisplayConstants.MENU_OPTION_1);
+                System.Console.WriteLine(DisplayConstants.MENU_OPTION_2);
+                System.Console.WriteLine(DisplayConstants.MENU_OPTION_5);
+                System.Console.WriteLine(DisplayConstants.MENU_PROMPT);
 
                 var choice = System.Console.ReadKey(true).KeyChar;
                 GameManager manager = null;
@@ -256,13 +244,13 @@ namespace GameOfLife.Console
                                     manager = new GameManager(state.Rows, state.Columns, renderer, gameStateService);
                                     manager._currentIteration = state.Iteration;
                                     manager._gameEngine.SetCurrentGrid(state.ToGrid());
-                                    System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.GameLoadedMessage);
+                                    System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.GAME_LOADED_MESSAGE);
                                 }
                             }
                         }
                         else
                         {
-                            System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.NoSaveFileMessage);
+                            System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.NO_SINGLE_SAVES);
                             System.Console.WriteLine(DisplayConstants.CONTINUE_PROMPT);
                             System.Console.ReadKey(true);
                         }
