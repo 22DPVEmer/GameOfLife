@@ -22,8 +22,13 @@ namespace GameOfLife.Console.GameLoop
         private bool _isPaused;
         private CancellationTokenSource? _cancellationTokenSource;
         private int _currentStartIndex;
+        private bool _shouldGenerateNext = true;
 
-        public bool IsPaused => _isPaused;
+        public bool IsPaused
+        {
+            get => _isPaused;
+            private set => _isPaused = value;
+        }
 
         public GameLoopHandler(
             IRenderer renderer,
@@ -71,8 +76,8 @@ namespace GameOfLife.Console.GameLoop
 
         public void TogglePause()
         {
-            _isPaused = !_isPaused;
-            if (_isPaused)
+            IsPaused = !IsPaused;
+            if (IsPaused)
             {
                 // When pausing, ensure we render one final time to show the current state
                 RenderCurrentState();
@@ -101,22 +106,27 @@ namespace GameOfLife.Console.GameLoop
             }
         }
 
+        public void ResetNextGenerationFlag()
+        {
+            _shouldGenerateNext = false;
+        }
+
         private async Task GameLoop()
         {
             _displayControlsAction();
             RenderCurrentState(); // Initial render
 
-            while (_isRunning)
+            while (!_cancellationTokenSource?.Token.IsCancellationRequested ?? true)
             {
-                if (!_isPaused)
-                {
-                    _updateAction();
-                    RenderCurrentState();
-                }
-
                 try
                 {
                     await Task.Delay(DisplayConstants.GAME_UPDATE_INTERVAL_MS, _cancellationTokenSource?.Token ?? CancellationToken.None);
+                    
+                    if (!IsPaused)
+                    {
+                        _updateAction();
+                        RenderCurrentState();
+                    }
                 }
                 catch (TaskCanceledException)
                 {

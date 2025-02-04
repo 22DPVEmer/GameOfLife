@@ -29,20 +29,36 @@ namespace GameOfLife.Console.Menu
             System.Console.Write(DisplayConstants.SAVE_SELECTION_PROMPT);
             string? input = System.Console.ReadLine();
 
+            // Handle empty input (cancel)
             if (string.IsNullOrEmpty(input))
             {
                 choice = -1;
                 return false;
             }
 
-            if (int.TryParse(input, out choice) && choice >= 1 && choice <= saves.Count)
+            // Parse and validate the choice
+            if (!int.TryParse(input, out choice))
             {
-                choice--; // Convert to 0-based index
-                return true;
+                choice = -1;
+                DisplayMessage(DisplayConstants.INVALID_OPTION);
+                return false;
             }
 
-            choice = -1;
-            return false;
+            // Validate range (1-based indexing for display)
+            if (choice < 1 || choice > saves.Count)
+            {
+                choice = -1;
+                DisplayMessage(DisplayConstants.INVALID_OPTION);
+                return false;
+            }
+
+            // Convert to 0-based index
+            choice--;
+            
+            // Debug output to verify the conversion
+            DisplayMessage($"Debug: Selected save file '{saves[choice]}'");
+            
+            return true;
         }
 
         public void WaitForKeyPress()

@@ -4,6 +4,7 @@ using GameOfLife.Core.Models;
 using System.Linq;
 using GameOfLife.Core.Constants;
 using GameOfLife.Console.Menu.Interfaces;
+using System;
 
 namespace GameOfLife.Console.Menu
 {
@@ -57,20 +58,28 @@ namespace GameOfLife.Console.Menu
 
             if (_consoleUI.TryGetSaveChoice(saves, out int choice))
             {
-                GameState state;
-                if (isParallel)
+                try
                 {
-                    state = _gameStateService.LoadParallelGame(saves[choice - 1]);
+                    GameState state;
+                    if (isParallel)
+                    {
+                        state = _gameStateService.LoadParallelGame(saves[choice]);
+                    }
+                    else
+                    {
+                        state = _gameStateService.LoadGame(saves[choice]);
+                    }
+                    
+                    if (state != null)
+                    {
+                        var manager = await _gameFactory.CreateFromState(state, isParallel);
+                        await manager.StartGame();
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    state = _gameStateService.LoadGame(saves[choice - 1]);
-                }
-                
-                if (state != null)
-                {
-                    var manager = await _gameFactory.CreateFromState(state, isParallel);
-                    await manager.StartGame();
+                    _consoleUI.DisplayMessage($"{DisplayConstants.ERROR_PREFIX}{ex.Message}");
+                    _consoleUI.WaitForKeyPress();
                 }
             }
         }
