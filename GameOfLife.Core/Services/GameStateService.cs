@@ -1,35 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Linq;
-using GameOfLife.Core.Models;
+using System.Text.Json;
 using GameOfLife.Core.Constants;
+using GameOfLife.Core.Interfaces;
+using GameOfLife.Core.Models;
 
 namespace GameOfLife.Core.Services
 {
     /// <summary>
     /// Service for saving and loading game states to/from files
     /// </summary>
-    public class GameStateService
+    public class GameStateService : IGameStateService
     {
         private readonly string _savePath;
-        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNameCaseInsensitive = true
-        };
+        private readonly JsonSerializerOptions _jsonOptions;
 
         public GameStateService()
         {
-            _savePath = FileConstants.DEFAULT_SAVE_PATH;
-            Directory.CreateDirectory(_savePath);
-        }
-
-        public GameStateService(string customSavePath)
-        {
-            _savePath = customSavePath;
-            Directory.CreateDirectory(_savePath);
+            _savePath = Path.Combine(Environment.CurrentDirectory, FileConstants.SAVE_DIRECTORY);
+            _jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            
+            if (!Directory.Exists(_savePath))
+            {
+                Directory.CreateDirectory(_savePath);
+            }
         }
 
         /// <summary>
@@ -58,42 +54,53 @@ namespace GameOfLife.Core.Services
         public List<string> GetSaveFiles(bool parallelGames = false)
         {
             if (!Directory.Exists(_savePath))
-            {
                 return new List<string>();
-            }
 
             var prefix = parallelGames ? FileConstants.PARALLEL_GAME_PREFIX : FileConstants.SINGLE_GAME_PREFIX;
-            return Directory.GetFiles(_savePath, $"{prefix}*{FileConstants.SAVE_FILE_EXTENSION}")
-                .Select(Path.GetFileName)
-                .ToList();
+            var files = Directory.GetFiles(_savePath, $"{prefix}*{FileConstants.SAVE_FILE_EXTENSION}")
+                               .Select(Path.GetFileName)
+                               .Where(f => f != null)
+                               .Select(f => f!)
+                               .ToList();
+            return files;
         }
 
         /// <summary>
         /// Loads a game state from a specific save file
         /// </summary>
-        public GameState LoadGame(string fileName)
+        public GameState LoadGame(string filename)
         {
-            var filePath = Path.Combine(_savePath, fileName);
+            var filePath = Path.Combine(_savePath, filename);
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException($"Save file not found: {fileName}");
+                throw new FileNotFoundException($"Save file not found: {filename}");
             }
 
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<GameState>(json, _jsonOptions);
+            var state = JsonSerializer.Deserialize<GameState>(json, _jsonOptions);
+            if (state == null)
+            {
+                throw new InvalidOperationException("Failed to deserialize game state");
+            }
+            return state;
         }
 
         /// <summary>
         /// Loads the most recent save file of a specific type
         /// </summary>
-        public GameState? LoadMostRecentGame(bool parallelGames = false)
+        public GameState LoadMostRecentGame(bool parallelGames = false)
         {
             var saves = GetSaveFiles(parallelGames);
             if (!saves.Any())
-                return null;
+                throw new FileNotFoundException("No save files found");
 
             var mostRecent = saves.OrderByDescending(f => f).First();
-            return LoadGame(mostRecent);
+            var state = LoadGame(mostRecent);
+            if (state == null)
+            {
+                throw new InvalidOperationException("Failed to load most recent game state");
+            }
+            return state;
         }
 
         public bool SaveFileExists(bool parallelGames = false)
@@ -116,13 +123,8 @@ namespace GameOfLife.Core.Services
                 Directory.CreateDirectory(_savePath);
             }
 
-            var parallelState = new ParallelGameState
-            {
-                Games = states.ToList(),
-                TotalGames = states.Count(),
-                Rows = rows,
-                Columns = columns
-            };
+            var statesList = states.ToList();
+            var parallelState = new ParallelGameState(statesList, rows, columns);
 
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var filePath = Path.Combine(_savePath, $"{FileConstants.PARALLEL_GAME_PREFIX}save_{timestamp}{FileConstants.SAVE_FILE_EXTENSION}");
@@ -142,7 +144,22 @@ namespace GameOfLife.Core.Services
             }
 
             var json = File.ReadAllText(filePath);
-            return JsonSerializer.Deserialize<ParallelGameState>(json, _jsonOptions);
+            var state = JsonSerializer.Deserialize<ParallelGameState>(json, _jsonOptions);
+            if (state == null)
+            {
+                throw new InvalidOperationException("Failed to deserialize parallel game state");
+            }
+            return state;
+        }
+
+        public void SaveParallelGame(ParallelGameState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var filePath = Path.Combine(_savePath, $"{FileConstants.PARALLEL_GAME_PREFIX}save_{timestamp}{FileConstants.SAVE_FILE_EXTENSION}");
+            var json = JsonSerializer.Serialize(state, _jsonOptions);
+            File.WriteAllText(filePath, json);
         }
     }
 } 

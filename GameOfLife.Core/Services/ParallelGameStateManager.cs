@@ -68,22 +68,7 @@ namespace GameOfLife.Core.Services
 
         public int GetTotalLivingCells()
         {
-            return _games.Values.Sum(game =>
-            {
-                var grid = game.GetCurrentGrid();
-                int count = 0;
-                for (int row = 0; row < grid.Rows; row++)
-                {
-                    for (int col = 0; col < grid.Columns; col++)
-                    {
-                        if (grid.GetCell(row, col).IsAlive)
-                        {
-                            count++;
-                        }
-                    }
-                }
-                return count;
-            });
+            return _games.Values.Sum(game => game.GetCurrentGrid().CountLivingCells());
         }
     }
 } 

@@ -1,165 +1,256 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using GameOfLife.Core;
-using GameOfLife.Core.Constants;
-using GameOfLife.Core.Interfaces;
 using GameOfLife.Core.Models;
+using GameOfLife.Core.Interfaces;
 using GameOfLife.Core.Services;
+using GameOfLife.Core.Constants;
+using GameOfLife.Console.GameLoop;
+using GameOfLife.Console.Input;
+using GameOfLife.Console.Base;
+using GameOfLife.Console.Menu.Interfaces;
 
 namespace GameOfLife.Console
 {
-    public class ParallelGameManager : BaseGameManager
+    /// <summary>
+    /// Manages multiple Game of Life instances running in parallel.
+    /// Supports running up to 1000 games simultaneously with the ability to view 8 at a time.
+    /// </summary>
+    public class ParallelGameManager : GameHandlerWithLoopBase, IGameManager
     {
-        private readonly IParallelGameStateManager _gameStateManager;
-        private readonly IVisibleGamesManager _visibleGamesManager;
+        private readonly List<GameEngine> _allGames;
+        private readonly int _rows;
+        private readonly int _columns;
+        private int _currentIteration;
+        private int _currentStartIndex;
 
-        public ParallelGameManager(int numberOfGames, int rows, int columns, IRenderer renderer)
-            : this(numberOfGames, rows, columns, renderer, null)
+        /// <summary>
+        /// Creates a new parallel game manager with specified grid dimensions and renderer.
+        /// </summary>
+        /// <param name="rows">Number of rows in each game grid</param>
+        /// <param name="columns">Number of columns in each game grid</param>
+        /// <param name="renderer">The renderer implementation to use</param>
+        public ParallelGameManager(int rows, int columns, IRenderer renderer)
+            : this(rows, columns, renderer, new GameStateService())
         {
         }
 
-        public ParallelGameManager(int numberOfGames, int rows, int columns, IRenderer renderer, GameState initialState)
-            : base(renderer)
+        /// <summary>
+        /// Creates a new parallel game manager with specified dependencies for testing.
+        /// </summary>
+        /// <param name="rows">Number of rows in each game grid</param>
+        /// <param name="columns">Number of columns in each game grid</param>
+        /// <param name="renderer">The renderer implementation to use</param>
+        /// <param name="gameStateService">The game state service for saving/loading games</param>
+        public ParallelGameManager(int rows, int columns, IRenderer renderer, IGameStateService gameStateService)
+            : base(renderer, gameStateService)
         {
-            if (numberOfGames > DisplayConstants.MAX_PARALLEL_GAMES)
-                throw new ArgumentException($"Number of games cannot exceed {DisplayConstants.MAX_PARALLEL_GAMES}");
-
-            _gameStateManager = new ParallelGameStateManager();
-            _visibleGamesManager = new VisibleGamesManager();
-
-            _gameStateManager.InitializeGames(numberOfGames, rows, columns, initialState);
-            _visibleGamesManager.Initialize(numberOfGames, DisplayConstants.MAX_VISIBLE_GAMES);
+            _rows = rows;
+            _columns = columns;
+            _allGames = new List<GameEngine>();
+            _currentIteration = 1;
+            _currentStartIndex = 0;
         }
 
-        public ParallelGameManager(ParallelGameState savedState, IRenderer renderer)
-            : base(renderer)
+        /// <summary>
+        /// Initializes all parallel game instances with random states.
+        /// </summary>
+        private void InitializeAllGames()
         {
-            if (savedState == null)
-                throw new ArgumentNullException(nameof(savedState));
-
-            _gameStateManager = new ParallelGameStateManager();
-            _visibleGamesManager = new VisibleGamesManager();
-
-            _gameStateManager.InitializeFromSavedState(savedState);
-            _visibleGamesManager.Initialize(savedState.Games.Count, DisplayConstants.MAX_VISIBLE_GAMES);
-        }
-
-        public override async Task StartGame()
-        {
-            _isRunning = true;
-            System.Console.WriteLine(DisplayConstants.PARALLEL_GAME_CONTROLS);
-
-            var inputTask = Task.Run(HandleUserInput);
-            var updateTask = Task.Run(async () =>
+            for (int i = 0; i < DisplayConstants.TOTAL_PARALLEL_GAMES; i++)
             {
-                while (_isRunning)
-                {
-                    await UpdateAllGames();
-                    await Task.Delay(_updateIntervalMs);
-                }
-            });
-
-            var renderTask = Task.Run(async () =>
-            {
-                while (_isRunning)
-                {
-                    RenderVisibleGames();
-                    await Task.Delay(_updateIntervalMs);
-                }
-            });
-
-            await Task.WhenAll(inputTask, updateTask, renderTask);
-        }
-
-        private async Task UpdateAllGames()
-        {
-            var games = _gameStateManager.GetGames();
-            var updateTasks = games.Select(async kvp =>
-            {
-                await Task.Run(() =>
-                {
-                    kvp.Value.NextGeneration();
-                    var iterations = _gameStateManager.GetIterations();
-                    _gameStateManager.UpdateGameState(kvp.Key, iterations[kvp.Key] + 1);
-                });
-            });
-
-            await Task.WhenAll(updateTasks);
-        }
-
-        private void RenderVisibleGames()
-        {
-            lock (_renderLock)
-            {
-                var games = _gameStateManager.GetGames();
-                var visibleIds = _visibleGamesManager.GetVisibleGameIds();
-                var visibleGrids = visibleIds.Select(id => games[id].GetCurrentGrid()).ToList();
-
-                var iterations = _gameStateManager.GetIterations();
-                int maxIteration = iterations.Values.Max();
-                int totalLivingCells = _gameStateManager.GetTotalLivingCells();
-
-                _renderer.Render(visibleGrids, maxIteration, totalLivingCells, games.Count);
-                
-                System.Console.WriteLine(string.Format(DisplayConstants.SHOWING_GAMES_FORMAT, 
-                    string.Join(", ", visibleIds.Select(id => id + 1))));
-                System.Console.WriteLine(DisplayConstants.PARALLEL_GAME_CONTROLS);
-                System.Console.WriteLine(DisplayConstants.SWITCH_GAMES_PROMPT);
+                var game = new GameEngine(_rows, _columns);
+                game.RandomizeInitialState();
+                _allGames.Add(game);
             }
         }
 
-        private async Task HandleUserInput()
+        protected override void InitializeHandlers()
         {
-            while (_isRunning)
-            {
-                if (System.Console.KeyAvailable)
-                {
-                    var key = System.Console.ReadKey(true);
-                    switch (key.Key)
+            _gameLoopHandler = new GameLoopHandler(
+                _renderer,
+                () => {
+                    foreach (var game in _allGames)
                     {
-                        case ConsoleKey.LeftArrow:
-                            _visibleGamesManager.CycleVisibleGames(-1);
-                            break;
-                        case ConsoleKey.RightArrow:
-                            _visibleGamesManager.CycleVisibleGames(1);
-                            break;
-                        case ConsoleKey.UpArrow:
-                            _visibleGamesManager.CycleVisibleGames(-DisplayConstants.GAMES_PER_PAGE);
-                            break;
-                        case ConsoleKey.DownArrow:
-                            _visibleGamesManager.CycleVisibleGames(DisplayConstants.GAMES_PER_PAGE);
-                            break;
-                        case ConsoleKey.S:
-                            await SaveCurrentGame();
-                            break;
-                        default:
-                            await HandleBasicInput(key);
-                            break;
+                        game.NextGeneration();
+                    }
+                    _currentIteration++;
+                },
+                () => _allGames[_currentStartIndex].GetCurrentGrid(),
+                () => GetTotalLivingCells(),
+                () => _currentIteration,
+                DisplayControls,
+                true,
+                () => GetVisibleGrids(),
+                _currentStartIndex
+            );
+
+            _inputHandler = new GameInputHandler(
+                _gameStateService,
+                SaveGame,
+                _ => {
+                    foreach (var game in _allGames)
+                    {
+                        game.RandomizeInitialState();
+                    }
+                    System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.PARALLEL_GAMES_RANDOMIZED);
+                    if (_gameLoopHandler != null)
+                    {
+                        _gameLoopHandler.RenderCurrentState();
+                    }
+                },
+                () => {
+                    Stop();
+                    System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.QUIT_MESSAGE);
+                    Environment.Exit(0);
+                },
+                () => {
+                    Stop();
+                    System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.RETURN_TO_MENU_MESSAGE);
+                },
+                HandleArrowKeys,
+                () => {
+                    if (_gameLoopHandler != null)
+                    {
+                        _gameLoopHandler.TogglePause();
+                        var message = _gameLoopHandler.IsPaused ? DisplayConstants.PARALLEL_GAMES_PAUSED : DisplayConstants.PARALLEL_GAMES_RESUMED;
+                        System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, message);
                     }
                 }
-                await Task.Delay(DisplayConstants.INPUT_CHECK_INTERVAL_MS);
+            );
+        }
+
+        protected override void InitializeGame()
+        {
+            InitializeAllGames();
+            DisplayControls();
+        }
+
+        private void HandleArrowKeys(ConsoleKey key)
+        {
+            switch (key)
+            {
+                case ConsoleKey.LeftArrow:
+                    _currentStartIndex = (_currentStartIndex - 1 + DisplayConstants.TOTAL_PARALLEL_GAMES) % DisplayConstants.TOTAL_PARALLEL_GAMES;
+                    break;
+                case ConsoleKey.RightArrow:
+                    _currentStartIndex = (_currentStartIndex + 1) % DisplayConstants.TOTAL_PARALLEL_GAMES;
+                    break;
+                case ConsoleKey.UpArrow:
+                    _currentStartIndex = (_currentStartIndex - DisplayConstants.VISIBLE_PARALLEL_GAMES + DisplayConstants.TOTAL_PARALLEL_GAMES) % DisplayConstants.TOTAL_PARALLEL_GAMES;
+                    break;
+                case ConsoleKey.DownArrow:
+                    _currentStartIndex = (_currentStartIndex + DisplayConstants.VISIBLE_PARALLEL_GAMES) % DisplayConstants.TOTAL_PARALLEL_GAMES;
+                    break;
+            }
+            
+            if (_gameLoopHandler != null)
+            {
+                _gameLoopHandler.UpdateStartIndex(_currentStartIndex);
             }
         }
 
-        private async Task SaveCurrentGame()
+        /// <summary>
+        /// Gets the currently visible subset of games for display.
+        /// </summary>
+        /// <returns>List of grids representing the visible games</returns>
+        private IEnumerable<Grid> GetVisibleGrids()
+        {
+            var visibleGrids = new List<Grid>();
+            for (int i = 0; i < DisplayConstants.VISIBLE_PARALLEL_GAMES; i++)
+            {
+                int index = (_currentStartIndex + i) % DisplayConstants.TOTAL_PARALLEL_GAMES;
+                visibleGrids.Add(_allGames[index].GetCurrentGrid());
+            }
+            return visibleGrids;
+        }
+
+        /// <summary>
+        /// Calculates the total number of living cells across all parallel games.
+        /// </summary>
+        /// <returns>Total count of living cells</returns>
+        private int GetTotalLivingCells()
+        {
+            int total = 0;
+            foreach (var game in _allGames)
+            {
+                total += game.GetCurrentGrid().CountLivingCells();
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// Saves the state of all parallel games to persistent storage.
+        /// </summary>
+        private void SaveGame()
         {
             try
             {
-                var games = _gameStateManager.GetGames();
-                var iterations = _gameStateManager.GetIterations();
-                var states = games.Select(kvp => new GameState(kvp.Value.GetCurrentGrid(), iterations[kvp.Key])).ToList();
-                
-                var firstGrid = games[0].GetCurrentGrid();
-                _gameStateService.SaveParallelGames(states, firstGrid.Rows, firstGrid.Columns);
-                
-                await ShowTemporaryMessage(string.Format(DisplayConstants.SAVE_SUCCESS, states.Count));
+                var states = new List<GameState>();
+                foreach (var game in _allGames)
+                {
+                    states.Add(new GameState(game.GetCurrentGrid(), _currentIteration));
+                }
+                _gameStateService.SaveParallelGame(new ParallelGameState(states, _rows, _columns));
+                System.Console.WriteLine(DisplayConstants.EVENT_MESSAGE_FORMAT, DisplayConstants.GAME_SAVED_MESSAGE);
             }
             catch (Exception ex)
             {
                 DisplayError(ex);
-                await Task.Delay(1000);
             }
+        }
+
+        /// <summary>
+        /// Loads a parallel game state, initializing all games from the saved state.
+        /// If there are fewer saved games than total slots, fills remaining slots with random games.
+        /// </summary>
+        /// <param name="state">The parallel game state to load</param>
+        /// <exception cref="ArgumentNullException">Thrown when state is null</exception>
+        /// <exception cref="ArgumentException">Thrown when state is not a parallel game state</exception>
+        public void LoadState(GameState state)
+        {
+            if (state == null) throw new ArgumentNullException(nameof(state));
+            
+            var parallelState = state as ParallelGameState;
+            if (parallelState == null)
+            {
+                throw new ArgumentException(DisplayConstants.PARALLEL_GAME_STATE_ERROR, nameof(state));
+            }
+            
+            _currentIteration = parallelState.Games[0].Iteration;
+            _allGames.Clear();
+            
+            foreach (var gameState in parallelState.Games)
+            {
+                var game = new GameEngine(_rows, _columns);
+                game.SetCurrentGrid(gameState.ToGrid());
+                _allGames.Add(game);
+            }
+            
+            // Fill remaining slots with random games if needed
+            while (_allGames.Count < DisplayConstants.TOTAL_PARALLEL_GAMES)
+            {
+                var game = new GameEngine(_rows, _columns);
+                game.RandomizeInitialState();
+                _allGames.Add(game);
+            }
+        }
+
+        protected override void DisplayControls()
+        {
+            System.Console.WriteLine(string.Format(DisplayConstants.PARALLEL_GAME_STATUS, 
+                _currentIteration, GetTotalLivingCells(), DisplayConstants.TOTAL_PARALLEL_GAMES));
+            System.Console.WriteLine(string.Format(DisplayConstants.SHOWING_GAMES_FORMAT, 
+                _currentStartIndex + 1, _currentStartIndex + DisplayConstants.VISIBLE_PARALLEL_GAMES));
+            System.Console.WriteLine();
+            System.Console.WriteLine(DisplayConstants.PARALLEL_GAME_CONTROLS);
+            System.Console.WriteLine(DisplayConstants.SWITCH_GAMES_PROMPT);
+        }
+
+        protected override void DisplayError(Exception ex)
+        {
+            base.DisplayError(ex);
         }
     }
 } 

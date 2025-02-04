@@ -6,6 +6,8 @@ namespace GameOfLife.Core.Constants
     {
         NewGame = '1',
         LoadGame = '2',
-        Exit = '3'
+        NewParallelGame = '3',
+        LoadParallelGame = '4',
+        Exit = '5'
     }
 } 
