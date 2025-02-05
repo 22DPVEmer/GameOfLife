@@ -42,7 +42,7 @@ namespace GameOfLife.Core.Services
             }
 
             var prefix = isParallel ? FileConstants.PARALLEL_GAME_PREFIX : FileConstants.SINGLE_GAME_PREFIX;
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var timestamp = DateTime.Now.ToString(FileConstants.SAVE_TIMESTAMP_FORMAT);
             var filePath = Path.Combine(_savePath, $"{prefix}save_{timestamp}{FileConstants.SAVE_FILE_EXTENSION}");
             var json = JsonSerializer.Serialize(state, _jsonOptions);
             File.WriteAllText(filePath, json);
@@ -57,6 +57,13 @@ namespace GameOfLife.Core.Services
                 return new List<string>();
 
             var prefix = parallelGames ? FileConstants.PARALLEL_GAME_PREFIX : FileConstants.SINGLE_GAME_PREFIX;
+            
+            // Functional pipeline to transform file paths:
+            // 1. Get all matching files using the prefix pattern
+            // 2. Extract just the filename from the full path
+            // 3. Filter out any null values for safety
+            // 4. Convert nullable strings to non-nullable (with null check)
+            // 5. Convert to a materialized list
             var files = Directory.GetFiles(_savePath, $"{prefix}*{FileConstants.SAVE_FILE_EXTENSION}")
                                .Select(Path.GetFileName)
                                .Where(f => f != null)
@@ -126,7 +133,7 @@ namespace GameOfLife.Core.Services
             var statesList = states.ToList();
             var parallelState = new ParallelGameState(statesList, rows, columns);
 
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var timestamp = DateTime.Now.ToString(FileConstants.SAVE_TIMESTAMP_FORMAT);
             var filePath = Path.Combine(_savePath, $"{FileConstants.PARALLEL_GAME_PREFIX}save_{timestamp}{FileConstants.SAVE_FILE_EXTENSION}");
             var json = JsonSerializer.Serialize(parallelState, _jsonOptions);
             File.WriteAllText(filePath, json);
@@ -156,7 +163,7 @@ namespace GameOfLife.Core.Services
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
             
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var timestamp = DateTime.Now.ToString(FileConstants.SAVE_TIMESTAMP_FORMAT);
             var filePath = Path.Combine(_savePath, $"{FileConstants.PARALLEL_GAME_PREFIX}save_{timestamp}{FileConstants.SAVE_FILE_EXTENSION}");
             var json = JsonSerializer.Serialize(state, _jsonOptions);
             File.WriteAllText(filePath, json);
