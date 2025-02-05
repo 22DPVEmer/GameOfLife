@@ -1,6 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using GameOfLife.Core.Constants;
+﻿using System.Threading.Tasks;
+using GameOfLife.Core.Interfaces;
+using GameOfLife.Core.Services;
+using GameOfLife.Console.Menu;
+using GameOfLife.Console.Menu.Interfaces;
+using GameOfLife.Console.Renderers;
 
 namespace GameOfLife.Console
 {
@@ -8,17 +11,30 @@ namespace GameOfLife.Console
     {
         static async Task Main(string[] args)
         {
-            try
-            {
-                var gameManager = await GameManager.CreateGame();
-                await gameManager.StartGame();
-            }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine($"{DisplayConstants.ERROR_PREFIX}{ex.Message}");
-                System.Console.WriteLine(DisplayConstants.EXIT_PROMPT);
-                System.Console.ReadKey();
-            }
+            // Initialize UI components
+            var consoleUI = new ConsoleUI();
+            var menuRenderer = new MenuRenderer();
+            var inputHandler = new InputHandler(consoleUI);
+
+            // Initialize core services
+            var renderer = new ConsoleRenderer(consoleUI, inputHandler);
+            var gameStateService = new GameStateService();
+
+            // Initialize game factories and loaders
+            IGameManagerFactory gameFactory = new GameManagerFactory(gameStateService, renderer);
+            IGameLoader gameLoader = new GameLoader(gameStateService, gameFactory, consoleUI);
+            
+            // Initialize and start the game menu
+            var gameMenu = new GameMenu(
+                renderer, 
+                gameStateService, 
+                menuRenderer, 
+                inputHandler,
+                gameLoader,
+                gameFactory,
+                consoleUI);
+            
+            await gameMenu.ShowMenu();
         }
     }
 }

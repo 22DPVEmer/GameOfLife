@@ -125,5 +125,25 @@ namespace GameOfLife.Core.Models
                 }
             }
         }
+
+        /// <summary>
+        /// Counts the number of living cells in the grid.
+        /// </summary>
+        /// <returns>The total number of living cells.</returns>
+        public int CountLivingCells()
+        {
+            int count = 0;
+            for (int row = 0; row < Rows; row++)
+            {
+                for (int col = 0; col < Columns; col++)
+                {
+                    if (_cells[row, col].IsAlive)
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
     }
 } 
